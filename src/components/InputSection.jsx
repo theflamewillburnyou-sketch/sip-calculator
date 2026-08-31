@@ -57,12 +57,12 @@ export default function InputSection({ params, setParams }) {
         <SliderInput
           label="Initial Lump Sum" icon={Wallet}
           value={params.lumpSum} onChange={update('lumpSum')}
-          min={0} max={50000000} step={50000} prefix="₹" color="purple"
+          min={0} max={Math.max(50000000, params.lumpSum)} step={500} prefix="₹" color="purple"
         />
         <SliderInput
           label="Monthly SIP" icon={BarChart3}
           value={params.monthlySIP} onChange={update('monthlySIP')}
-          min={500} max={500000} step={500} prefix="₹" color="cyan"
+          min={0} max={500000} step={500} prefix="₹" color="cyan"
         />
         <SliderInput
           label="Annual Step-Up" icon={ArrowUpCircle}
@@ -73,12 +73,12 @@ export default function InputSection({ params, setParams }) {
         <SliderInput
           label="Expected Annual Return" icon={Percent}
           value={params.annualReturn} onChange={update('annualReturn')}
-          min={1} max={30} step={0.5} suffix="%" color="purple"
+          min={0} max={30} step={0.5} suffix="%" color="purple"
         />
         <SliderInput
           label="Investment Duration" icon={Calendar}
           value={params.totalYears} onChange={update('totalYears')}
-          min={1} max={50} step={1} suffix=" yrs" color="cyan"
+          min={0} max={50} step={1} suffix=" yrs" color="cyan"
         />
         <SliderInput
           label="SIP Stops After" icon={PauseCircle}
