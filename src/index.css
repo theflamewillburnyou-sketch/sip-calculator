@@ -7,7 +7,7 @@
     --bg: #f8fafc;
     --bg-elevated: #ffffff;
     --bg-soft: #f1f5f9;
-    --text-primary: #f8fafc;
+    --text-primary: #0f172a;
     --text-secondary: #334155;
     --text-muted: #64748b;
     --border: rgba(15, 23, 42, 0.12);
@@ -157,7 +157,7 @@
   [data-theme='light'] .text-white\/40,
   [data-theme='light'] .text-white\/30,
   [data-theme='light'] .text-white\/20 {
-    color: var(--text-primary) !important;
+    color: #f8fafc !important;
   }
 
   [data-theme='light'] .border-white\/10,
