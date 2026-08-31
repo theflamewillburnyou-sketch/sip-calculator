@@ -57,7 +57,7 @@ export default function InputSection({ params, setParams }) {
         <SliderInput
           label="Initial Lump Sum" icon={Wallet}
           value={params.lumpSum} onChange={update('lumpSum')}
-          min={0} max={Math.max(50000000, params.lumpSum)} step={500} prefix="₹" color="purple"
+          min={0} max={50000000} step={500} prefix="₹" color="purple"
         />
         <SliderInput
           label="Monthly SIP" icon={BarChart3}

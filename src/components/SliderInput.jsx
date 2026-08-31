@@ -23,17 +23,20 @@ export default function SliderInput({
     orange: 'shadow-glow-sm',
   };
 
-  const percent = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
+  // Dynamically scale max if value exceeds default max prop
+  const effectiveMax = Math.max(max, value || 0);
+  const percent = Math.min(100, Math.max(0, (((value || 0) - min) / ((effectiveMax - min) || 1)) * 100));
 
   const updateValue = useCallback((clientX) => {
     if (!trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    const raw = min + pct * (max - min);
+    const currentMax = Math.max(max, value || 0);
+    const raw = min + pct * (currentMax - min);
     const stepped = Math.round(raw / step) * step;
-    const clamped = Math.max(min, Math.min(max, stepped));
+    const clamped = Math.max(min, Math.min(currentMax, stepped));
     onChange(clamped);
-  }, [min, max, step, onChange]);
+  }, [min, max, value, step, onChange]);
 
   const handlePointerDown = useCallback((e) => {
     e.preventDefault();
@@ -49,7 +52,7 @@ export default function SliderInput({
     window.addEventListener('pointerup', handleUp);
   }, [updateValue]);
 
-  const displayValue = formatDisplay ? formatDisplay(value) : `${prefix}${value.toLocaleString('en-IN')}${suffix}`;
+  const displayValue = formatDisplay ? formatDisplay(value) : `${prefix}${(value || 0).toLocaleString('en-IN')}${suffix}`;
 
   return (
     <div className="group space-y-3">
@@ -61,15 +64,19 @@ export default function SliderInput({
         <div className="flex items-center gap-2">
           <input
             type="number"
-            value={value}
+            value={value ?? ''}
             onChange={(e) => {
-              const v = parseFloat(e.target.value);
-              if (!isNaN(v)) onChange(Math.max(min, Math.min(max, v)));
+              const valStr = e.target.value;
+              if (valStr === '') {
+                onChange(0);
+                return;
+              }
+              const v = parseFloat(valStr);
+              if (!isNaN(v)) onChange(Math.max(min, v)); // Max cap removed
             }}
             className="w-28 rounded-lg px-3 py-1.5 text-right text-sm font-mono outline-none focus:border-neon-purple/50 focus:ring-1 focus:ring-neon-purple/20 transition-all"
             style={{ border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text-primary)' }}
             min={min}
-            max={max}
             step={step}
           />
           {suffix && <span className="text-xs min-w-[20px]" style={{ color: 'var(--text-muted)' }}>{suffix}</span>}
@@ -95,7 +102,7 @@ export default function SliderInput({
       <div className="flex items-center justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
         <span>{prefix}{min.toLocaleString('en-IN')}{suffix}</span>
         {helpText && <span style={{ color: 'var(--text-muted)' }}>{helpText}</span>}
-        <span>{prefix}{max.toLocaleString('en-IN')}{suffix}</span>
+        <span>{prefix}{effectiveMax.toLocaleString('en-IN')}{suffix}</span>
       </div>
     </div>
   );
