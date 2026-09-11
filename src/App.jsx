@@ -340,6 +340,13 @@ export default function App() {
 
       // SECTION 3: AI Recommendations (Dynamic Word Wrapping)
       y += (Math.ceil(metricsList.length / 2) * 18) + 4;
+      const ensureSpace = (needed) => {
+        if (y + needed > pageBottomY) {
+          doc.addPage();
+          y = 18;
+        }
+      };
+      ensureSpace(20);
       doc.setFillColor(purple[0], purple[1], purple[2]);
       doc.rect(margin, y, 3, 5, 'F');
       doc.setFont('helvetica', 'bold');
@@ -371,17 +378,13 @@ export default function App() {
         const safeTitle = safeText(ins.title);
         const safeBody = safeText(ins.text);
         const bodyLines = doc.splitTextToSize(safeBody, contentWidth - 10);
-        const cardHeight = Math.max(16, 9 + bodyLines.length * 3.6);
-        if (y + cardHeight + 4 > pageBottomY) {
-          doc.addPage();
-          y = 24;
-        }
+        const cardHeight = Math.max(13, 7.5 + bodyLines.length * 3.4);
+        ensureSpace(cardHeight + 3);
         const iy = y;
         doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
         doc.setDrawColor(borderClr[0], borderClr[1], borderClr[2]);
         doc.rect(margin, iy, contentWidth, cardHeight, 'FD');
 
-        // Draw a tiny colorful indicator line on the left side of the insight card
         let borderIndicator = purple;
         if (ins.type === 'danger' || ins.type === 'warning') borderIndicator = [236, 72, 153];
         if (ins.type === 'success') borderIndicator = [16, 185, 129];
@@ -391,34 +394,25 @@ export default function App() {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(navy[0], navy[1], navy[2]);
-        doc.text(`${tag}  ${safeTitle}`, margin + 5, iy + 4.5);
+        doc.text(`${tag}  ${safeTitle}`, margin + 5, iy + 4);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
+        doc.setFontSize(7.5);
         doc.setTextColor(71, 85, 105);
-        doc.text(bodyLines, margin + 5, iy + 8.5);
-        y += cardHeight + 3;
+        doc.text(bodyLines, margin + 5, iy + 7.5);
+        y += cardHeight + 2.5;
       });
 
-      // Footer Page 1
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
-      doc.setTextColor(148, 163, 184);
-      doc.text('Page 1 of 2  |  WealthWise AI Strategy Report', pageWidth / 2, pageHeight - 10, { align: 'center' });
+      // --- SECTION 4: LEDGER (continue on same page when space allows) ---
+      const ledgerMilestones = results.yearlyData.filter(d =>
+        d.year === 1 ||
+        d.year % 5 === 0 ||
+        d.year === results.yearlyData.length
+      );
+      const ledgerBlockNeeded = 20 + ledgerMilestones.length * 7.5;
+      ensureSpace(Math.min(ledgerBlockNeeded, 60));
 
-      // --- PAGE 2: DETAILED STRATEGIC LEDGER ---
-      doc.addPage();
-
-      // Simple top header
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(148, 163, 184);
-      doc.text('WEALTHWISE PROJECTED PORTFOLIO COMPOUNDING LEDGER', margin, 15);
-      doc.setDrawColor(borderClr[0], borderClr[1], borderClr[2]);
-      doc.line(margin, 17, margin + contentWidth, 17);
-
-      // Section Title
-      y = 24;
+      y += 4;
       doc.setFillColor(cyan[0], cyan[1], cyan[2]);
       doc.rect(margin, y, 3, 5, 'F');
       doc.setFont('helvetica', 'bold');
@@ -427,66 +421,45 @@ export default function App() {
       doc.text('4. Projected Milestone Compounding Ledgers (5-Year Milestones)', margin + 5, y + 4);
 
       y += 9;
-      // Table Header Row - 6 perfectly-aligned columns
-      doc.setFillColor(navy[0], navy[1], navy[2]);
-      doc.rect(margin, y, contentWidth, 8, 'F');
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.setTextColor(255, 255, 255);
-      doc.text('Year', margin + 4, y + 5.5);
-      doc.text('Phase', margin + 15, y + 5.5);
-      doc.text('Start Balance', margin + 62, y + 5.5, { align: 'right' });
-      doc.text('Added / Withdrawn', margin + 102, y + 5.5, { align: 'right' });
-      doc.text('Compound Growth', margin + 142, y + 5.5, { align: 'right' });
-      doc.text('Ending Balance', margin + 182, y + 5.5, { align: 'right' });
-
-      y += 8;
-      // Extract milestones for ledger (Year 1, every 5 years, and final year)
-      const ledgerMilestones = results.yearlyData.filter(d => 
-        d.year === 1 || 
-        d.year % 5 === 0 || 
-        d.year === results.yearlyData.length
-      );
+      const drawLedgerHeader = () => {
+        doc.setFillColor(navy[0], navy[1], navy[2]);
+        doc.rect(margin, y, contentWidth, 8, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(255, 255, 255);
+        doc.text('Year', margin + 4, y + 5.5);
+        doc.text('Phase', margin + 15, y + 5.5);
+        doc.text('Start Balance', margin + 62, y + 5.5, { align: 'right' });
+        doc.text('Added / Withdrawn', margin + 102, y + 5.5, { align: 'right' });
+        doc.text('Compound Growth', margin + 142, y + 5.5, { align: 'right' });
+        doc.text('Ending Balance', margin + 182, y + 5.5, { align: 'right' });
+        y += 8;
+      };
+      drawLedgerHeader();
 
       ledgerMilestones.forEach((row, idx) => {
-        if (y + 11 > pageBottomY) {
-          doc.addPage();
-          y = 24;
-          doc.setFillColor(navy[0], navy[1], navy[2]);
-          doc.rect(margin, y, contentWidth, 8, 'F');
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(8);
-          doc.setTextColor(255, 255, 255);
-          doc.text('Year', margin + 4, y + 5.5);
-          doc.text('Phase', margin + 15, y + 5.5);
-          doc.text('Start Balance', margin + 62, y + 5.5, { align: 'right' });
-          doc.text('Added / Withdrawn', margin + 102, y + 5.5, { align: 'right' });
-          doc.text('Compound Growth', margin + 142, y + 5.5, { align: 'right' });
-          doc.text('Ending Balance', margin + 182, y + 5.5, { align: 'right' });
-          y += 8;
-        }
         const rowHeight = 7.5;
+        if (y + rowHeight > pageBottomY) {
+          doc.addPage();
+          y = 18;
+          drawLedgerHeader();
+        }
+
         const isSwp = row.phase === 'Withdrawal';
-        
-        // Alternating background color
+
         if (idx % 2 === 0) {
           doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
           doc.rect(margin, y, contentWidth, rowHeight, 'F');
         }
 
-        // Draw light bottom border for row
         doc.setDrawColor(241, 245, 249);
         doc.line(margin, y + rowHeight, margin + contentWidth, y + rowHeight);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(navy[0], navy[1], navy[2]);
-
-        // Values alignment
         doc.text(row.year.toString(), margin + 4, y + 5);
-        
-        // Phase Tag styling
+
         doc.setFont('helvetica', 'bold');
         if (row.phase === 'SIP Active') doc.setTextColor(purple[0], purple[1], purple[2]);
         else if (row.phase === 'Growth Only') doc.setTextColor(cyan[0], cyan[1], cyan[2]);
@@ -515,17 +488,18 @@ export default function App() {
         y += rowHeight;
       });
 
-      // Disclaimer statement (using ASCII safe text block)
-      y = Math.max(y + 12, pageHeight - 55);
+      // Disclaimer directly under content (no forced bottom gap)
+      ensureSpace(28);
+      y += 8;
       doc.setFillColor(254, 242, 242);
       doc.setDrawColor(254, 202, 202);
-      doc.rect(margin, y, contentWidth, 24, 'FD');
+      doc.rect(margin, y, contentWidth, 22, 'FD');
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(185, 28, 28);
       doc.text('[IMPORTANT] Financial Disclaimer & Compound Projection Rules', margin + 5, y + 4.5);
-      
+
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7);
       doc.setTextColor(127, 29, 29);
@@ -533,20 +507,29 @@ export default function App() {
         'Calculations shown in this report are projections based on steady compound interest formulas and do not constitute absolute guarantees of market returns.',
         margin + 5,
         y + 9,
-        { maxWidth: contentWidth - 10, lineHeight: 3.8 }
+        { maxWidth: contentWidth - 10, lineHeight: 3.5 }
       );
       drawWrappedText(
         'Future asset values are calculated on consistent monthly growth; actual mutual funds, equity indices, or debt instruments fluctuate based on market volatility.',
         margin + 5,
-        y + 16,
-        { maxWidth: contentWidth - 10, lineHeight: 3.8 }
+        y + 15.5,
+        { maxWidth: contentWidth - 10, lineHeight: 3.5 }
       );
 
-      // Footer Page 2
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(7.5);
-      doc.setTextColor(148, 163, 184);
-      doc.text('Page 2 of 2  |  WealthWise AI Strategy Report', pageWidth / 2, pageHeight - 10, { align: 'center' });
+      // Dynamic footers on every page
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(148, 163, 184);
+        doc.text(
+          `Page ${i} of ${totalPages}  |  WealthWise AI Strategy Report`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+      }
 
       // Save PDF
       doc.save(`WealthWise-Strategy-Brief-${new Date().toISOString().slice(0,10)}.pdf`);
