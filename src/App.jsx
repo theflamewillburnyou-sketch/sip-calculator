@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import confetti from 'canvas-confetti';
 import { jsPDF } from 'jspdf';
 import {
   Sparkles, Download, Share2, Zap, RefreshCw, Layers, Sun, Moon
@@ -38,7 +37,6 @@ export default function App() {
   const [isExporting, setIsExporting] = useState(false);
   
   const dashboardRef = useRef(null);
-  const lastMilestone = useRef({ fire: false, cr: false });
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('wealthwise_theme');
@@ -82,53 +80,7 @@ export default function App() {
   const insights = generateInsights(results);
   const sharePayload = useMemo(() => buildSharePayload(params, results), [params, results]);
 
-  // 2. Confetti Milestones Celebrations
-  useEffect(() => {
-    if (!results || !results.metrics) return;
-    const { fireProgress, finalCorpus } = results.metrics;
-
-    const currentFire = fireProgress >= 100;
-    const currentCr = finalCorpus >= 1e7;
-
-    // Trigger on transition from false to true
-    if (currentFire && !lastMilestone.current.fire) {
-      triggerConfetti("FIRE Achieved! 🔥 Let's celebrate financial independence!");
-    }
-    if (currentCr && !lastMilestone.current.cr) {
-      triggerConfetti("Welcome to the Crorepati Club! 👑 ₹1 Crore Milestone crossed!");
-    }
-
-    lastMilestone.current = { fire: currentFire, cr: currentCr };
-  }, [results]);
-
-  const triggerConfetti = () => {
-    // Canvas Confetti multi-burst
-    const duration = 2.5 * 1000;
-    const end = Date.now() + duration;
-
-    (function frame() {
-      confetti({
-        particleCount: 4,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
-        colors: ['#a855f7', '#6366f1', '#22d3ee']
-      });
-      confetti({
-        particleCount: 4,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-        colors: ['#a855f7', '#ec4899', '#22d3ee']
-      });
-
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    }());
-  };
-
-  // 3. Client-side Vector PDF Report Export
+  // 2. Client-side Vector PDF Report Export
   const handleExportPDF = () => {
     setIsExporting(true);
 
