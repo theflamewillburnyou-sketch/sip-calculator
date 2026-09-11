@@ -554,7 +554,7 @@ export default function App() {
             </div>
             <div className="font-display font-extrabold text-base md:text-xl tracking-tight flex items-center gap-1.5 whitespace-nowrap">
               WealthWise
-              <span className="hidden sm:inline-block text-[9px] font-semibold bg-neon-purple/20 text-neon-purple px-1.5 py-0.5 rounded-md font-mono tracking-wider whitespace-nowrap">AI-Powered • Free Forever</span>
+              <span className="hidden sm:inline-block text-[9px] font-semibold text-neon-purple px-1.5 py-0.5 rounded-md font-mono tracking-wider whitespace-nowrap">AI-Powered • Free Forever</span>
             </div>
           </div>
 
