@@ -13,6 +13,7 @@ import ShareModal from './components/ShareModal';
 import { generateFullBreakdown } from './engine/sipCalculator';
 import { generateInsights } from './engine/insightGenerator';
 import { buildSharePayload } from './utils/buildSharePayload';
+import brandIconWhite from './assets/brand-icon-white.png';
 
 // Default parameters
 const DEFAULT_PARAMS = {
@@ -501,46 +502,15 @@ export default function App() {
       <header className="backdrop-blur-md sticky top-0 z-40 theme-transition" style={{ borderBottom: '1px solid var(--border-soft)', background: 'color-mix(in srgb, var(--bg) 84%, transparent)' }}>
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-neon-purple via-neon-blue to-neon-cyan flex items-center justify-center shadow-glow-sm shrink-0">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 32 32"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-white"
-                aria-hidden="true"
-              >
-                {/* Flame */}
-                <path
-                  fill="currentColor"
-                  d="M9.2 3.2c.1 2.6-1.5 4.2-2.6 6.2C5.2 12.2 4.8 14.8 6.1 17c.8 1.4 2.2 2.3 3.8 2.5-.6-1.8-.2-3.6.9-5.1 1-1.4 1.6-3 1.3-4.8-.8-1.1-1.7-3.1-2.9-6.4z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12.4 5.8c.3 2.4-.8 4.1-1.4 5.8-.5 1.5-.2 3.2 1 4.3.5-.9.8-1.9.9-2.9.2-1.6.9-3 1.8-4.3-.7-.9-1.4-1.8-2.3-2.9z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M8.6 11.2c.4 1.6-.2 2.9-.7 4.1-.3.8-.2 1.7.4 2.4.4-.6.6-1.3.6-2 .1-1.2.5-2.2 1.1-3.2-.5-.4-.9-.8-1.4-1.3z"
-                />
-                {/* Ascending bars */}
-                <rect x="13.2" y="18.2" width="2.6" height="5.2" rx="0.5" fill="currentColor" />
-                <rect x="16.6" y="15.2" width="2.6" height="8.2" rx="0.5" fill="currentColor" />
-                <rect x="20" y="11.6" width="2.6" height="11.8" rx="0.5" fill="currentColor" />
-                {/* Growth arc + arrowhead */}
-                <path
-                  d="M9.5 23.2c2.4 3.2 7.4 4.6 12.6 2.2 2.6-1.2 4.5-3.3 5.4-5.8"
-                  stroke="currentColor"
-                  strokeWidth="2.6"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-                <path
-                  fill="currentColor"
-                  d="M24.2 12.2l1.6 7.4-6.2-2.1 4.6-5.3z"
-                />
-              </svg>
+            <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-neon-purple via-neon-blue to-neon-cyan flex items-center justify-center shadow-glow-sm shrink-0 overflow-hidden">
+              <img
+                src={brandIconWhite}
+                alt=""
+                width={18}
+                height={18}
+                className="w-[18px] h-[18px] object-contain"
+                draggable={false}
+              />
             </div>
             <div className="font-display font-extrabold text-base md:text-xl tracking-tight flex items-center gap-1.5 whitespace-nowrap">
               SIP FirePlan
