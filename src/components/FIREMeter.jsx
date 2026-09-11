@@ -8,7 +8,7 @@ export default function FIREMeter({ progress = 0, fireNumber = 0 }) {
 
   // Generate badges and labels based on progress and corpus targets
   const getFireMilestone = (p) => {
-    if (p >= 100) return { title: 'FAT FIRE 🔥', desc: 'Total financial freedom. Work is now 100% optional!', badge: 'Retirement Ready 👑' };
+    if (p >= 100) return { title: 'FAT FIRE 🔥', desc: 'True financial freedom achieved. Work is now a choice, not a necessity! 🎉', badge: 'Retirement Ready 👑' };
     if (p >= 75) return { title: 'Barista FIRE ☕', desc: 'Cover expenses with passive income + a light fun job!', badge: 'Financial Boss 💸' };
     if (p >= 50) return { title: 'COAST FIRE 🌊', desc: 'Your savings will grow to cover basic retirement without extra inputs!', badge: 'Compound King 👑' };
     if (p >= 25) return { title: 'Lean FIRE 🍃', desc: 'Minimalist expenses covered. Basic needs are secure!', badge: 'Wealth Seed 🌱' };
@@ -27,7 +27,7 @@ export default function FIREMeter({ progress = 0, fireNumber = 0 }) {
       <div className="flex w-full items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
           <Flame size={14} className="text-neon-pink" />
-          FIRE Progress
+          Your FIRE Journey 🔥
         </span>
         <span className="text-[10px] font-semibold bg-neon-pink/15 text-neon-pink border border-neon-pink/20 px-2 py-0.5 rounded-full flex items-center gap-1">
           <Award size={10} />
@@ -41,7 +41,7 @@ export default function FIREMeter({ progress = 0, fireNumber = 0 }) {
             {cleanProgress}%
           </div>
           <div className="text-right">
-            <span className="text-[9px] block uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>FIRE Goal (25x)</span>
+            <span className="text-[9px] block uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>FIRE Target (25× Annual Expenses)</span>
             <span className="text-xs font-mono font-semibold" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(fireNumber)}</span>
           </div>
         </div>

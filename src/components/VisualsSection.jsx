@@ -81,10 +81,10 @@ export default function VisualsSection({ results, theme = 'light', onDownloadCha
       <div className="flex items-center justify-between pb-1 overflow-x-auto scrollbar-none" style={{ borderBottom: '1px solid var(--border-soft)' }}>
         <div className="flex gap-4">
           {[
-            { id: 'growth', label: 'Wealth Growth', icon: TrendingUp },
-            { id: 'ratio', label: 'Invested vs Returns', icon: BarChart3 },
-            { id: 'swp', label: 'Retirement (SWP)', icon: Clock, disabled: !swpResult },
-            { id: 'ledger', label: 'Detailed Ledger', icon: Table }
+            { id: 'growth', label: '📈 Wealth Growth', icon: TrendingUp },
+            { id: 'ratio', label: '💹 Invested vs Returns', icon: BarChart3 },
+            { id: 'swp', label: '🏖️ Retirement Income', icon: Clock, disabled: !swpResult },
+            { id: 'ledger', label: '📋 Year-by-Year Ledger', icon: Table }
           ].map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -129,8 +129,8 @@ export default function VisualsSection({ results, theme = 'light', onDownloadCha
             >
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <h3 className="text-sm font-bold font-display" style={{ color: 'var(--text-primary)' }}>Wealth Growth & Inflation</h3>
-                  <p className="text-[10px] leading-none mt-1" style={{ color: 'var(--text-muted)' }}>Compounded accumulation vs inflation-adjusted purchasing power</p>
+                  <h3 className="text-sm font-bold font-display" style={{ color: 'var(--text-primary)' }}>Your Wealth Compounding Journey</h3>
+                  <p className="text-[10px] leading-none mt-1" style={{ color: 'var(--text-muted)' }}>Watch ₹1 invested today become a wealth empire — vs. what inflation quietly steals</p>
                 </div>
                 <div className="flex gap-4 text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
                   <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded bg-neon-purple" /> Corpus</span>

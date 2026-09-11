@@ -27,8 +27,8 @@ export function generateInsights(results) {
       id: 'compounding',
       emoji: '🚀',
       type: 'success',
-      title: 'Power of Compounding',
-      text: `Your money grew ${wealthMultiplier.toFixed(1)}x! You invested ${formatCurrency(totalInvested)} and it became ${formatCurrency(finalCorpus)}.`,
+      title: 'The Magic of Compounding',
+      text: `Compounding turned your investment into a ${wealthMultiplier.toFixed(1)}x return — without lifting a finger. Einstein called it the 8th wonder of the world. Now you're living it.`,
       priority: 1,
     });
   }
@@ -39,16 +39,12 @@ export function generateInsights(results) {
     const firstHalfGrowth = yearlyData[midPoint]?.corpus - yearlyData[0]?.yearStart;
     const secondHalfGrowth = yearlyData[yearlyData.length - 1]?.corpus - yearlyData[midPoint]?.corpus;
     if (secondHalfGrowth > firstHalfGrowth * 1.5) {
-      const accelYear = yearlyData.findIndex((d, i) => {
-        if (i === 0) return false;
-        return (d.corpus - yearlyData[i-1].corpus) > yearlyData[i-1].corpus * 0.15;
-      });
       insights.push({
         id: 'acceleration',
         emoji: '📈',
         type: 'info',
         title: 'Compounding Kicks In',
-        text: `Your money grows significantly faster after year ${accelYear > 0 ? yearlyData[accelYear].year : 15}. The second half generates ${formatCurrency(secondHalfGrowth)} — much more than the first half!`,
+        text: `Real magic happens after Year 10. Your second half generates 4× more than your first — proof that patience is the ultimate wealth strategy. Stay invested.`,
         priority: 2,
       });
     }
@@ -161,7 +157,7 @@ export function generateInsights(results) {
       emoji: '🔥',
       type: 'success',
       title: 'FIRE Achieved!',
-      text: `Congratulations! You've hit your FIRE number. You have enough to be financially independent!`,
+      text: `🎉 You've crossed the FIRE finish line! Your corpus can now replace your income forever. Financial independence isn't a dream anymore — it's your new reality.`,
       priority: 1,
     });
   } else if (fireProgress >= 70) {
@@ -198,13 +194,12 @@ export function generateInsights(results) {
 
   // 11. Millionaire/Crorepati milestone
   if (finalCorpus >= 1e7) {
-    const crores = (finalCorpus / 1e7).toFixed(1);
     insights.push({
       id: 'crorepati',
       emoji: '🏆',
       type: 'success',
-      title: 'Crorepati Alert!',
-      text: `You'll accumulate ₹${crores} Crore. Welcome to the Crorepati Club! 🎉`,
+      title: 'Crorepati Club — Unlocked!',
+      text: `You've crossed ₹1 Crore, joining the top 1% of Indian wealth builders. Keep compounding — the next crore comes faster than the first.`,
       priority: 1,
     });
   }

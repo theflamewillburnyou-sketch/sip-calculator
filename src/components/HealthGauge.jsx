@@ -15,7 +15,7 @@ export default function HealthGauge({ score = 0 }) {
   // Get status details based on score
   const getStatus = (val) => {
     if (val >= 85) return { text: 'Elite Portfolio', emoji: '👑', color: 'text-neon-green', bg: 'from-neon-green/20 to-neon-cyan/20', desc: 'Your plan is exceptionally optimized, beats inflation, and offers highly sustainable passive income.' };
-    if (val >= 70) return { text: 'Solid Plan', emoji: '💪', color: 'text-neon-cyan', bg: 'from-neon-blue/20 to-neon-cyan/20', desc: 'Very well structured! Good balance of wealth growth and solid resistance to market inflation.' };
+    if (val >= 70) return { text: 'Solid Plan — You\'re On Track!', emoji: '💪', color: 'text-neon-cyan', bg: 'from-neon-blue/20 to-neon-cyan/20', desc: 'Excellent strategy! Your portfolio balances growth with inflation protection — a hallmark of India\'s top investors.' };
     if (val >= 50) return { text: 'Stable Outlook', emoji: '👍', color: 'text-neon-orange', bg: 'from-neon-orange/20 to-neon-yellow/20', desc: 'Decent setup, but might fall short of inflation or have a slightly aggressive SWP survival rate.' };
     return { text: 'Needs Tuning', emoji: '🩺', color: 'text-neon-pink', bg: 'from-neon-pink/20 to-neon-purple/20', desc: 'Strategy needs optimization. Try increasing your SIP step-up or extending the investment duration.' };
   };
@@ -32,7 +32,7 @@ export default function HealthGauge({ score = 0 }) {
       <div className="flex w-full items-center justify-between mb-2">
         <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
           <ShieldCheck size={14} className="text-neon-purple" />
-          Health Score
+          Wealth Health Score™
         </span>
         <div className="group relative cursor-pointer">
           <HelpCircle size={14} className="transition-colors" style={{ color: 'var(--text-muted)' }} />

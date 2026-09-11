@@ -553,10 +553,10 @@ export default function App() {
             <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-neon-purple via-neon-blue to-neon-cyan flex items-center justify-center shadow-glow-sm shrink-0">
               <Zap size={16} className="text-white fill-white" />
             </div>
-            <h1 className="font-display font-extrabold text-base md:text-xl tracking-tight flex items-center gap-1.5 whitespace-nowrap">
+            <div className="font-display font-extrabold text-base md:text-xl tracking-tight flex items-center gap-1.5 whitespace-nowrap">
               WealthWise
-              <span className="hidden sm:inline-block text-[9px] font-semibold bg-neon-purple/20 text-neon-purple border border-neon-purple/20 px-1.5 py-0.5 rounded-md uppercase font-mono tracking-wider whitespace-nowrap">AI Powered</span>
-            </h1>
+              <span className="hidden sm:inline-block text-[9px] font-semibold bg-neon-purple/20 text-neon-purple border border-neon-purple/20 px-1.5 py-0.5 rounded-md font-mono tracking-wider whitespace-nowrap">AI-Powered • Free Forever</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
@@ -577,7 +577,7 @@ export default function App() {
             >
               <Layers size={14} className="text-neon-cyan shrink-0" />
               <span className="hidden md:inline">
-                {activeView === 'dashboard' ? 'Compare strategies' : 'Go back'}
+                {activeView === 'dashboard' ? 'Compare Strategies 📊' : 'Go back'}
               </span>
             </button>
 
@@ -603,7 +603,7 @@ export default function App() {
               ) : (
                 <>
                   <Download size={14} className="shrink-0" />
-                  <span className="hidden md:inline">PDF Export</span>
+                  <span className="hidden md:inline">Export PDF Report 📄</span>
                 </>
               )}
             </button>
@@ -611,9 +611,11 @@ export default function App() {
         </div>
       </header>
 
+      <h1 className="sr-only">SIPFirePlan — Free FIRE Calculator & SIP Planner for India | Financial Independence Made Simple</h1>
+
       {/* Main Body Layout */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 md:px-6 py-5 sm:py-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 z-10 relative">
-        
+
         {/* Left Hand: Sliders Panel */}
         <section className="lg:col-span-4 space-y-6">
           <InputSection params={params} setParams={setParams} />
@@ -642,7 +644,7 @@ export default function App() {
                 <div className="space-y-4">
                   <h3 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
                     <Sparkles size={14} className="text-neon-purple fill-neon-purple" />
-                    AI Intelligence Insights
+                    🤖 Your Personal AI Wealth Coach
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {insights.slice(0, 4).map((ins) => (
@@ -691,13 +693,21 @@ export default function App() {
 
       {/* Modern Fintech Footer */}
       <footer className="py-6 mt-12 text-center text-xs z-10 relative" style={{ borderTop: '1px solid var(--border-soft)', background: 'color-mix(in srgb, var(--bg) 90%, transparent)', color: 'var(--text-muted)' }}>
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="font-medium">© 2026 WealthWise. Built for future builders. Work is optional. 🚀</p>
-          <div className="flex gap-4 font-mono font-semibold text-[10px]">
-            <a href="#" className="hover:text-neon-purple transition">API Docs</a>
-            <a href="#" className="hover:text-neon-cyan transition">Terms</a>
-            <a href="#" className="hover:text-neon-pink transition">Security</a>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 flex flex-col items-center gap-3">
+          <p className="font-medium">© 2026 SIPFirePlan.com — India's #1 Free AI FIRE & SIP Calculator. Built for future builders. Work is optional. 🚀</p>
+          <nav className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-[10px]" style={{ color: 'var(--text-muted)' }} aria-label="SEO footer links">
+            <a href="#fire-calculator" className="hover:text-neon-purple transition">FIRE Calculator</a>
+            <span aria-hidden="true">|</span>
+            <a href="#sip-step-up" className="hover:text-neon-cyan transition">SIP Step-Up Calculator</a>
+            <span aria-hidden="true">|</span>
+            <a href="#swp-planner" className="hover:text-neon-pink transition">SWP Planner</a>
+            <span aria-hidden="true">|</span>
+            <a href="#retirement-planning" className="hover:text-neon-purple transition">Retirement Planning India</a>
+            <span aria-hidden="true">|</span>
+            <a href="#wealth-health-score" className="hover:text-neon-cyan transition">Wealth Health Score</a>
+            <span aria-hidden="true">|</span>
+            <a href="#crorepati-calculator" className="hover:text-neon-pink transition">Crorepati Calculator</a>
+          </nav>
         </div>
       </footer>
     </div>
