@@ -153,7 +153,23 @@ export default function App() {
       };
 
       const pageBottomY = pageHeight - 18;
-      const safeText = (text) => String(text ?? '').replace(/₹/g, 'Rs. ');
+      // jsPDF Helvetica only supports WinAnsi — strip emoji & fancy Unicode that corrupt layout
+      const safeText = (text) => String(text ?? '')
+        .replace(/₹/g, 'Rs. ')
+        .replace(/[—–―]/g, '-')
+        .replace(/[“”«»]/g, '"')
+        .replace(/[‘’‚‛]/g, "'")
+        .replace(/[×✕✖]/g, 'x')
+        .replace(/…/g, '...')
+        .replace(/™/g, '(TM)')
+        .replace(/®/g, '(R)')
+        .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
+        .replace(/[\u{2600}-\u{27BF}]/gu, '')
+        .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
+        .replace(/[\u{200B}-\u{200D}\u{FEFF}]/gu, '')
+        .replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, '')
+        .replace(/[ \t]+/g, ' ')
+        .trim();
       const drawWrappedText = (text, x, yPos, options = {}) => {
         const width = options.maxWidth || contentWidth - 10;
         const lineHeight = options.lineHeight || 4;
@@ -332,10 +348,30 @@ export default function App() {
       doc.text('3. AI Intelligence Recommendations', margin + 5, y + 4);
 
       y += 8;
+      const getPdfTag = (emoji) => {
+        if (emoji === '🚀') return '[ACCUMULATION]';
+        if (emoji === '📈') return '[GROWTH]';
+        if (emoji === '💰') return '[RETURNS]';
+        if (emoji === '📊') return '[ANALYSIS]';
+        if (emoji === '⚠️') return '[WARNING]';
+        if (emoji === '✅') return '[SUSTAINABILITY]';
+        if (emoji === '🏦') return '[WITHDRAWALS]';
+        if (emoji === '🌴') return '[PASSIVE INCOME]';
+        if (emoji === '🔥') return '[FIRE GOAL]';
+        if (emoji === '💪') return '[HEALTH]';
+        if (emoji === '🏆') return '[MILESTONE]';
+        if (emoji === '📉') return '[INFLATION]';
+        if (emoji === '⬆️') return '[STEP-UP]';
+        if (emoji === '🩺') return '[HEALTH]';
+        return '[INSIGHT]';
+      };
       const activeInsights = insights.slice(0, 4);
       activeInsights.forEach((ins) => {
-        const lineCount = doc.splitTextToSize(safeText(ins.text), contentWidth - 10).length;
-        const cardHeight = Math.max(16, 9 + lineCount * 3.6);
+        const tag = getPdfTag(ins.emoji);
+        const safeTitle = safeText(ins.title);
+        const safeBody = safeText(ins.text);
+        const bodyLines = doc.splitTextToSize(safeBody, contentWidth - 10);
+        const cardHeight = Math.max(16, 9 + bodyLines.length * 3.6);
         if (y + cardHeight + 4 > pageBottomY) {
           doc.addPage();
           y = 24;
@@ -352,35 +388,15 @@ export default function App() {
         doc.setFillColor(borderIndicator[0], borderIndicator[1], borderIndicator[2]);
         doc.rect(margin, iy, 1.5, cardHeight, 'F');
 
-        // Replace emojis with safe text tags for PDF to prevent encoding errors
-        const getPdfTag = (emoji) => {
-          if (emoji === '🚀') return '[ACCUMULATION]';
-          if (emoji === '📈') return '[GROWTH]';
-          if (emoji === '💰') return '[RETURNS]';
-          if (emoji === '📊') return '[ANALYSIS]';
-          if (emoji === '⚠️') return '[WARNING]';
-          if (emoji === '✅') return '[SUSTAINABILITY]';
-          if (emoji === '🏦') return '[WITHDRAWALS]';
-          if (emoji === '🌴') return '[PASSIVE INCOME]';
-          if (emoji === '🔥') return '[FIRE GOAL]';
-          if (emoji === '💪') return '[HEALTH]';
-          if (emoji === '🏆') return '[MILESTONE]';
-          return '[INSIGHT]';
-        };
-
-        const tag = getPdfTag(ins.emoji);
-
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8.5);
         doc.setTextColor(navy[0], navy[1], navy[2]);
-        doc.text(`${tag}  ${ins.title}`, margin + 5, iy + 4.5);
+        doc.text(`${tag}  ${safeTitle}`, margin + 5, iy + 4.5);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(71, 85, 105);
-        
-        // Wrap and sanitize Rupee symbol to prevent box/question-mark corruption
-        drawWrappedText(ins.text, margin + 5, iy + 8.5, { maxWidth: contentWidth - 10, lineHeight: 3.6 });
+        doc.text(bodyLines, margin + 5, iy + 8.5);
         y += cardHeight + 3;
       });
 
