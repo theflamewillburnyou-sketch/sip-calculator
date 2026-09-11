@@ -642,8 +642,8 @@ export default function App() {
 
                 {/* 3. AI Insights Feed */}
                 <div className="space-y-4">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
-                    <Sparkles size={14} className="text-neon-purple fill-neon-purple" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+                    <Sparkles size={16} className="text-neon-purple fill-neon-purple" />
                     🤖 Your Personal AI Wealth Coach
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -654,10 +654,10 @@ export default function App() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="glass-card p-4 hover:border-white/[0.12] transition-all flex items-start gap-3.5"
                       >
-                        <div className="text-xl mt-0.5 shrink-0 select-none">{ins.emoji}</div>
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-bold leading-none" style={{ color: 'var(--text-primary)' }}>{ins.title}</h4>
-                          <p className="text-[10px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>{ins.text}</p>
+                        <div className="text-2xl mt-0.5 shrink-0 select-none">{ins.emoji}</div>
+                        <div className="space-y-1.5">
+                          <h4 className="text-sm font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>{ins.title}</h4>
+                          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{ins.text}</p>
                         </div>
                       </motion.div>
                     ))}
