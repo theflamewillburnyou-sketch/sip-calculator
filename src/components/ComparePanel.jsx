@@ -1,39 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Save, Trash2, LayoutGrid, Check, Play, AlertCircle } from 'lucide-react';
-import { formatCurrency, formatPercent } from '../engine/sipCalculator';
+import { formatPercent, generateFullBreakdown } from '../engine/sipCalculator';
+import { useCurrency } from '../context/CurrencyContext';
+import { convertMoneyParams, DEFAULT_CURRENCY } from '../utils/currency';
 
 export default function ComparePanel({ currentParams, currentMetrics, currentSwpResult, onLoadParams }) {
+  const { currency, rates, formatCurrency } = useCurrency();
   const [scenarios, setScenarios] = useState([]);
   const [newScenarioName, setNewScenarioName] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Load scenarios on mount
   useEffect(() => {
     const saved = localStorage.getItem('wealthwise_scenarios');
-    if (saved) {
-      try {
-        setScenarios(JSON.parse(saved));
-      } catch (e) {
-        console.error(e);
-      }
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved);
+      setScenarios(Array.isArray(parsed) ? parsed.filter((s) => s && s.params) : []);
+    } catch (e) {
+      console.error(e);
+      setScenarios([]);
     }
   }, []);
 
   const handleSaveScenario = (e) => {
     e.preventDefault();
-    if (!newScenarioName.trim()) return;
+    if (!newScenarioName.trim() || !currentParams) return;
+
+    const live = currentMetrics
+      ? { metrics: currentMetrics, swpResult: currentSwpResult || null }
+      : generateFullBreakdown(currentParams);
 
     const newScenario = {
       id: Date.now().toString(),
       name: newScenarioName.trim(),
+      currency,
       params: { ...currentParams },
-      metrics: { ...currentMetrics },
-      swpResult: currentSwpResult ? { ...currentSwpResult } : null,
-      savedAt: new Date().toLocaleDateString()
+      metrics: { ...(live.metrics || currentMetrics || {}) },
+      swpResult: live.swpResult ? { ...live.swpResult } : null,
+      savedAt: new Date().toLocaleDateString(),
     };
 
-    const updated = [newScenario, ...scenarios].slice(0, 5); // Limit to 5 scenarios
+    const updated = [newScenario, ...scenarios].slice(0, 5);
     setScenarios(updated);
     localStorage.setItem('wealthwise_scenarios', JSON.stringify(updated));
     setNewScenarioName('');
@@ -42,18 +49,50 @@ export default function ComparePanel({ currentParams, currentMetrics, currentSwp
   };
 
   const handleDeleteScenario = (id) => {
-    const updated = scenarios.filter(s => s.id !== id);
+    const updated = scenarios.filter((s) => s.id !== id);
     setScenarios(updated);
     localStorage.setItem('wealthwise_scenarios', JSON.stringify(updated));
   };
 
   const handleLoadScenario = (scenario) => {
-    onLoadParams(scenario.params);
+    if (!scenario?.params || typeof onLoadParams !== 'function') return;
+    const srcCurrency = scenario.currency || DEFAULT_CURRENCY;
+    const nextParams = srcCurrency === currency
+      ? scenario.params
+      : convertMoneyParams(scenario.params, srcCurrency, currency, rates);
+    onLoadParams(nextParams || scenario.params);
   };
+
+  const displayScenarios = useMemo(() => {
+    return scenarios
+      .filter((scen) => scen && scen.params)
+      .map((scen) => {
+        try {
+          const srcCurrency = scen.currency || DEFAULT_CURRENCY;
+          const params = srcCurrency === currency
+            ? scen.params
+            : convertMoneyParams(scen.params, srcCurrency, currency, rates);
+          const live = generateFullBreakdown(params || scen.params);
+          return {
+            ...scen,
+            displayParams: params || scen.params,
+            displayMetrics: live?.metrics || scen.metrics || {},
+            displaySwpResult: live?.swpResult ?? scen.swpResult ?? null,
+          };
+        } catch (err) {
+          console.error('Failed to render scenario', scen?.id, err);
+          return {
+            ...scen,
+            displayParams: scen.params,
+            displayMetrics: scen.metrics || {},
+            displaySwpResult: scen.swpResult || null,
+          };
+        }
+      });
+  }, [scenarios, currency, rates]);
 
   return (
     <div className="space-y-6">
-      {/* Save Scenario Card */}
       <div className="glass-card p-5">
         <h3 className="text-sm font-bold font-display mb-2 flex items-center gap-1.5" style={{ color: 'var(--text-primary)' }}>
           <Save size={16} className="text-neon-purple" />
@@ -92,14 +131,13 @@ export default function ComparePanel({ currentParams, currentMetrics, currentSwp
         </form>
       </div>
 
-      {/* Comparisons Ledger Grid */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
             <LayoutGrid size={14} className="text-neon-cyan" />
-            Comparison Matrix ({scenarios.length} / 5)
+            Comparison Matrix ({displayScenarios.length} / 5)
           </h3>
-          {scenarios.length === 0 && (
+          {displayScenarios.length === 0 && (
             <span className="text-[10px] flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
               <AlertCircle size={10} />
               No strategies saved yet
@@ -107,24 +145,26 @@ export default function ComparePanel({ currentParams, currentMetrics, currentSwp
           )}
         </div>
 
-        {scenarios.length > 0 ? (
+        {displayScenarios.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {scenarios.map((scen) => {
-              const isSwp = scen.params.monthlyWithdrawal > 0;
+            {displayScenarios.map((scen) => {
+              const isSwp = (scen.displayParams?.monthlyWithdrawal || 0) > 0;
               return (
-                <motion.div
+                <div
                   key={scen.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
                   className="glass-card p-4 transition-all flex flex-col justify-between"
                 >
                   <div className="flex justify-between items-start mb-3 gap-2">
                     <div>
                       <h4 className="text-xs font-bold leading-normal line-clamp-1" style={{ color: 'var(--text-primary)' }}>{scen.name}</h4>
-                      <span className="text-[9px] block mt-0.5" style={{ color: 'var(--text-muted)' }}>Saved {scen.savedAt}</span>
+                      <span className="text-[9px] block mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                        Saved {scen.savedAt}
+                        {scen.currency ? ` · ${scen.currency}` : ''}
+                      </span>
                     </div>
                     <div className="flex gap-1">
                       <button
+                        type="button"
                         onClick={() => handleLoadScenario(scen)}
                         className="h-6 w-6 rounded-lg bg-neon-purple/10 hover:bg-neon-purple/20 flex items-center justify-center text-neon-purple transition-all"
                         title="Load Strategy"
@@ -132,6 +172,7 @@ export default function ComparePanel({ currentParams, currentMetrics, currentSwp
                         <Play size={12} fill="currentColor" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleDeleteScenario(scen.id)}
                         className="h-6 w-6 rounded-lg bg-neon-pink/10 hover:bg-neon-pink/20 flex items-center justify-center text-neon-pink transition-all"
                         title="Delete Strategy"
@@ -145,14 +186,14 @@ export default function ComparePanel({ currentParams, currentMetrics, currentSwp
                     <div>
                       <span className="text-[9px] block uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>SIP Contribution</span>
                       <span className="text-xs font-semibold font-mono" style={{ color: 'var(--text-secondary)' }}>
-                        {formatCurrency(scen.params.monthlySIP)}
-                        <span className="text-[10px] font-sans font-medium" style={{ color: 'var(--text-muted)' }}>/{scen.params.totalYears}y</span>
+                        {formatCurrency(scen.displayParams?.monthlySIP || 0)}
+                        <span className="text-[10px] font-sans font-medium" style={{ color: 'var(--text-muted)' }}>/{scen.displayParams?.totalYears || 0}y</span>
                       </span>
                     </div>
                     <div>
                       <span className="text-[9px] block uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Final Corpus</span>
                       <span className="text-xs font-bold text-neon-purple font-mono">
-                        {formatCurrency(scen.metrics.finalCorpus)}
+                        {formatCurrency(scen.displayMetrics?.finalCorpus || 0)}
                       </span>
                     </div>
                     {isSwp ? (
@@ -160,15 +201,15 @@ export default function ComparePanel({ currentParams, currentMetrics, currentSwp
                         <div>
                           <span className="text-[9px] block uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>SWP Withdrawal</span>
                           <span className="text-xs font-semibold font-mono" style={{ color: 'var(--text-secondary)' }}>
-                            {formatCurrency(scen.params.monthlyWithdrawal)}
+                            {formatCurrency(scen.displayParams?.monthlyWithdrawal || 0)}
                           </span>
                         </div>
                         <div>
                           <span className="text-[9px] block uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Corpus Survives</span>
                           <span className={`text-xs font-bold font-mono ${
-                            scen.swpResult?.depleted ? 'text-neon-orange' : 'text-neon-green'
+                            scen.displaySwpResult?.depleted ? 'text-neon-orange' : 'text-neon-green'
                           }`}>
-                            {scen.swpResult?.yearsLasted} Years
+                            {scen.displaySwpResult?.yearsLasted ?? '—'} Years
                           </span>
                         </div>
                       </>
@@ -177,19 +218,19 @@ export default function ComparePanel({ currentParams, currentMetrics, currentSwp
                         <div>
                           <span className="text-[9px] block uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>CAGR</span>
                           <span className="text-xs font-semibold font-mono" style={{ color: 'var(--text-secondary)' }}>
-                            {formatPercent(scen.metrics.cagr)}
+                            {formatPercent(scen.displayMetrics?.cagr || 0)}
                           </span>
                         </div>
                         <div>
                           <span className="text-[9px] block uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Wealth Multiplier</span>
                           <span className="text-xs font-bold text-neon-green font-mono">
-                            {scen.metrics.wealthMultiplier}x
+                            {scen.displayMetrics?.wealthMultiplier ?? 0}x
                           </span>
                         </div>
                       </>
                     )}
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>

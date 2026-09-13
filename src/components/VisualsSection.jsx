@@ -10,10 +10,11 @@ import {
 import {
   TrendingUp, BarChart3, Clock, Table, Info, Download, Calendar
 } from 'lucide-react';
-import { formatCurrency, formatPercent } from '../engine/sipCalculator';
+import { formatPercent } from '../engine/sipCalculator';
+import { useCurrency } from '../context/CurrencyContext';
 
 // Custom Tooltip Component
-const CustomTooltip = ({ active, payload, label, prefix = '₹', showPhase = true }) => {
+const CustomTooltip = ({ active, payload, label, showPhase = true, formatCurrency }) => {
   if (active && payload && payload.length) {
     return (
       <div className="glass-card p-3 shadow-glass rounded-xl text-left backdrop-blur-md" style={{ borderColor: 'var(--border)' }}>
@@ -47,6 +48,7 @@ const CustomTooltip = ({ active, payload, label, prefix = '₹', showPhase = tru
 };
 
 export default function VisualsSection({ results, theme = 'light', onDownloadChart }) {
+  const { formatCurrency, currency } = useCurrency();
   const [activeTab, setActiveTab] = useState('growth');
   const [ledgerPage, setLedgerPage] = useState(1);
   const ledgerPageSize = 10;
@@ -78,8 +80,8 @@ export default function VisualsSection({ results, theme = 'light', onDownloadCha
   return (
     <div className="space-y-6">
       {/* Charts Navigation Tab Bar */}
-      <div className="flex items-center justify-between pb-1 overflow-x-auto scrollbar-none" style={{ borderBottom: '1px solid var(--border-soft)' }}>
-        <div className="flex gap-4">
+      <div className="pb-1" style={{ borderBottom: '1px solid var(--border-soft)' }}>
+        <div className="grid grid-cols-2 gap-x-2 gap-y-1 md:flex md:flex-wrap md:gap-4">
           {[
             { id: 'growth', label: '📈 Wealth Growth', icon: TrendingUp },
             { id: 'ratio', label: '💹 Invested vs Returns', icon: BarChart3 },
@@ -97,12 +99,12 @@ export default function VisualsSection({ results, theme = 'light', onDownloadCha
                   setActiveTab(tab.id);
                   setLedgerPage(1);
                 }}
-                className={`relative pb-3 text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all outline-none ${
+                className={`relative pb-2.5 md:pb-3 px-1 text-[11px] sm:text-xs md:text-sm font-semibold flex items-center gap-1.5 transition-all outline-none text-left ${
                   active ? 'text-[color:var(--text-primary)]' : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-secondary)]'
                 }`}
               >
-                <Icon size={16} />
-                {tab.label}
+                <Icon size={14} className="shrink-0 md:w-4 md:h-4" />
+                <span className="leading-tight">{tab.label}</span>
                 {active && (
                   <motion.div
                     layoutId="activeVisualTab"
@@ -130,7 +132,7 @@ export default function VisualsSection({ results, theme = 'light', onDownloadCha
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h3 className="text-sm font-bold font-display" style={{ color: 'var(--text-primary)' }}>Your Wealth Compounding Journey</h3>
-                  <p className="text-[10px] leading-none mt-1" style={{ color: 'var(--text-muted)' }}>Watch ₹1 invested today become a wealth empire — vs. what inflation quietly steals</p>
+                  <p className="text-[10px] leading-none mt-1" style={{ color: 'var(--text-muted)' }}>Watch {formatCurrency(1, { compact: false })} invested today become a wealth empire — vs. what inflation quietly steals</p>
                 </div>
                 <div className="flex gap-4 text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>
                   <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded bg-neon-purple" /> Corpus</span>
@@ -158,9 +160,9 @@ export default function VisualsSection({ results, theme = 'light', onDownloadCha
                       fontSize={10}
                       fontMono
                       tickLine={false}
-                      tickFormatter={(v) => formatCurrency(v).replace('₹', '')}
+                      tickFormatter={(v) => formatCurrency(v, { stripSymbol: true })}
                     />
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
                     <Area
                       name="Total Corpus"
                       type="monotone"
@@ -227,9 +229,9 @@ export default function VisualsSection({ results, theme = 'light', onDownloadCha
                       fontSize={10}
                       fontMono
                       tickLine={false}
-                      tickFormatter={(v) => formatCurrency(v).replace('₹', '')}
+                      tickFormatter={(v) => formatCurrency(v, { stripSymbol: true })}
                     />
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
                     <Area
                       stackId="1"
                       name="Invested Capital"
@@ -294,9 +296,9 @@ export default function VisualsSection({ results, theme = 'light', onDownloadCha
                       fontSize={10}
                       fontMono
                       tickLine={false}
-                      tickFormatter={(v) => formatCurrency(v).replace('₹', '')}
+                      tickFormatter={(v) => formatCurrency(v, { stripSymbol: true })}
                     />
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
                     <Area
                       name="Remaining Corpus"
                       type="monotone"

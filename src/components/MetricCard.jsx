@@ -1,13 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useCurrency } from '../context/CurrencyContext';
+import { formatMoney } from '../utils/currency';
 
-function AnimatedCounter({ value, prefix = '', suffix = '', duration = 1.2, className = '' }) {
+function AnimatedCounter({ value, formatValue, duration = 1.2, className = '', resetKey = '' }) {
   const [display, setDisplay] = useState(0);
-  const prevValue = useRef(0);
   const rafRef = useRef(null);
 
   useEffect(() => {
-    const start = prevValue.current;
+    setDisplay(0);
+
+    const start = 0;
     const end = value;
     const startTime = performance.now();
     const dur = duration * 1000;
@@ -15,40 +18,31 @@ function AnimatedCounter({ value, prefix = '', suffix = '', duration = 1.2, clas
     const animate = (now) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / dur, 1);
-      // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = start + (end - start) * eased;
       setDisplay(current);
 
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(animate);
-      } else {
-        prevValue.current = end;
       }
     };
 
     rafRef.current = requestAnimationFrame(animate);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [value, duration]);
-
-  const formatNum = (n) => {
-    const abs = Math.abs(Math.round(n));
-    if (abs >= 1e7) return (abs / 1e7).toFixed(abs >= 1e9 ? 0 : abs >= 1e8 ? 1 : 2) + ' Cr';
-    if (abs >= 1e5) return (abs / 1e5).toFixed(abs >= 1e7 ? 0 : abs >= 1e6 ? 1 : 2) + ' L';
-    return abs.toLocaleString('en-IN');
-  };
+  }, [value, duration, resetKey]);
 
   return (
     <span className={className}>
-      {prefix}{value < 0 && display !== 0 ? '-' : ''}{formatNum(display)}{suffix}
+      {formatValue(display)}
     </span>
   );
 }
 
 export default function MetricCard({
-  icon: Icon, label, value, prefix = '₹', suffix = '',
-  color = 'purple', subText, badge, delay = 0
+  icon: Icon, label, value, prefix, suffix = '',
+  color = 'purple', subText, badge, delay = 0, isMoney = true,
 }) {
+  const { currency } = useCurrency();
   const colorBg = {
     purple: 'from-neon-purple/20 to-neon-blue/20',
     cyan: 'from-neon-blue/20 to-neon-cyan/20',
@@ -63,6 +57,10 @@ export default function MetricCard({
     pink: 'text-neon-pink',
     orange: 'text-neon-orange',
   };
+
+  const formatValue = isMoney
+    ? (n) => formatMoney(Math.round(n), { currency })
+    : (n) => `${prefix ?? ''}${(Math.round(n * 10) / 10).toLocaleString()}${suffix}`;
 
   return (
     <motion.div
@@ -88,7 +86,11 @@ export default function MetricCard({
       </div>
       <p className="text-xs font-medium mt-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
       <p className="text-xl md:text-2xl font-display font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-        <AnimatedCounter value={value} prefix={prefix} suffix={suffix} />
+        <AnimatedCounter
+          value={value}
+          formatValue={formatValue}
+          resetKey={currency}
+        />
       </p>
       {subText && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{subText}</p>}
     </motion.div>

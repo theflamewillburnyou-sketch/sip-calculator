@@ -3,27 +3,23 @@
  * Pure functions for SIP, Step-Up SIP, Lump Sum, Corpus Growth, SWP, and inflation calculations.
  */
 
-/** Format number to Indian currency style (₹XX,XX,XXX) */
-export function formatCurrency(amount) {
-  if (amount == null || isNaN(amount)) return '₹0';
-  const abs = Math.abs(Math.round(amount));
-  const sign = amount < 0 ? '-' : '';
-  if (abs >= 1e7) {
-    const cr = (abs / 1e7);
-    return sign + '₹' + cr.toFixed(cr >= 100 ? 0 : cr >= 10 ? 1 : 2) + ' Cr';
-  }
-  if (abs >= 1e5) {
-    const lakh = (abs / 1e5);
-    return sign + '₹' + lakh.toFixed(lakh >= 100 ? 0 : lakh >= 10 ? 1 : 2) + ' L';
-  }
-  const formatted = abs.toLocaleString('en-IN');
-  return sign + '₹' + formatted;
+import { formatMoney } from '../utils/currency';
+
+/** Optional display formatter injected by CurrencyProvider (amounts already in active currency). */
+let _formatCurrency = (amount, opts) => formatMoney(amount, { currency: 'INR', ...opts });
+
+export function setCurrencyFormatter(fn) {
+  if (typeof fn === 'function') _formatCurrency = fn;
 }
 
-/** Format number with full Indian notation */
+/** Format number for display in the active currency */
+export function formatCurrency(amount, opts) {
+  return _formatCurrency(amount, opts);
+}
+
+/** Format number with full notation (no compact suffixes) */
 export function formatCurrencyFull(amount) {
-  if (amount == null || isNaN(amount)) return '₹0';
-  return (amount < 0 ? '-₹' : '₹') + Math.abs(Math.round(amount)).toLocaleString('en-IN');
+  return _formatCurrency(amount, { compact: false });
 }
 
 /** Format percentage */

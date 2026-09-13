@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { jsPDF } from 'jspdf';
 import {
-  Sparkles, Download, Share2, RefreshCw, Layers, Sun, Moon
+  Sparkles, Download, Share2, RefreshCw, Layers, Sun, Moon, ArrowLeft
 } from 'lucide-react';
 
 import InputSection from './components/InputSection';
@@ -13,10 +12,12 @@ import ShareModal from './components/ShareModal';
 import { generateFullBreakdown } from './engine/sipCalculator';
 import { generateInsights } from './engine/insightGenerator';
 import { buildSharePayload } from './utils/buildSharePayload';
+import { useCurrency } from './context/CurrencyContext';
 import brandIconWhite from './assets/brand-icon-white.png';
+import { CURRENCY_META, DEFAULT_CURRENCY, convertMoneyParams } from './utils/currency';
 
-// Default parameters
-const DEFAULT_PARAMS = {
+// Default parameters (INR). Converted once when local currency is detected.
+const DEFAULT_PARAMS_INR = {
   lumpSum: 100000,
   monthlySIP: 15000,
   stepUpPercent: 10,
@@ -32,12 +33,18 @@ const DEFAULT_PARAMS = {
 
 export default function App() {
   const [theme, setTheme] = useState('light');
-  const [params, setParams] = useState(DEFAULT_PARAMS);
+  const [params, setParams] = useState(DEFAULT_PARAMS_INR);
   const [activeView, setActiveView] = useState('dashboard'); // dashboard | compare
   const [showShareModal, setShowShareModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  
+  const {
+    currency, symbol, country, setCurrency, ready: currencyReady, rates, formatCurrency,
+  } = useCurrency();
+
   const dashboardRef = useRef(null);
+  const paramsCurrencyRef = useRef(DEFAULT_CURRENCY);
+  const [paramsCurrency, setParamsCurrency] = useState(DEFAULT_CURRENCY);
+  const urlHydratedRef = useRef(false);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('wealthwise_theme');
@@ -51,38 +58,93 @@ export default function App() {
     localStorage.setItem('wealthwise_theme', theme);
   }, [theme]);
 
-  // 1. URL Sharing Integration
+  // 1. URL Sharing Integration (once)
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.has('sip')) {
-      try {
-        const parsed = {
-          lumpSum: parseFloat(searchParams.get('ls')) || 0,
-          monthlySIP: parseFloat(searchParams.get('sip')) || 0,
-          stepUpPercent: parseFloat(searchParams.get('su')) || 0,
-          annualReturn: parseFloat(searchParams.get('ar')) || 12,
-          totalYears: parseFloat(searchParams.get('ty')) || 20,
-          sipStopYear: parseFloat(searchParams.get('ssy')) || 20,
-          inflationRate: parseFloat(searchParams.get('inf')) || 6,
-          monthlyWithdrawal: parseFloat(searchParams.get('mw')) || 0,
-          swpStepUp: parseFloat(searchParams.get('wsu')) || 0,
-          swpReturn: parseFloat(searchParams.get('wr')) || 8,
-          swpYears: parseFloat(searchParams.get('wy')) || 0,
-        };
-        setParams(parsed);
-      } catch (e) {
-        console.error("Failed to parse URL query params", e);
+    if (!searchParams.has('sip')) return;
+    try {
+      const urlCurrency = (searchParams.get('cur') || DEFAULT_CURRENCY).toUpperCase();
+      const parsed = {
+        lumpSum: parseFloat(searchParams.get('ls')) || 0,
+        monthlySIP: parseFloat(searchParams.get('sip')) || 0,
+        stepUpPercent: parseFloat(searchParams.get('su')) || 0,
+        annualReturn: parseFloat(searchParams.get('ar')) || 12,
+        totalYears: parseFloat(searchParams.get('ty')) || 20,
+        sipStopYear: parseFloat(searchParams.get('ssy')) || 20,
+        inflationRate: parseFloat(searchParams.get('inf')) || 6,
+        monthlyWithdrawal: parseFloat(searchParams.get('mw')) || 0,
+        swpStepUp: parseFloat(searchParams.get('wsu')) || 0,
+        swpReturn: parseFloat(searchParams.get('wr')) || 8,
+        swpYears: parseFloat(searchParams.get('wy')) || 0,
+      };
+      const resolvedCur = CURRENCY_META[urlCurrency] ? urlCurrency : DEFAULT_CURRENCY;
+      setParams(parsed);
+      paramsCurrencyRef.current = resolvedCur;
+      setParamsCurrency(resolvedCur);
+      if (CURRENCY_META[urlCurrency]) {
+        localStorage.setItem('wealthwise_currency_override', urlCurrency);
       }
+      urlHydratedRef.current = true;
+    } catch (e) {
+      console.error("Failed to parse URL query params", e);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Compute results
-  const results = generateFullBreakdown(params);
-  const insights = generateInsights(results);
-  const sharePayload = useMemo(() => buildSharePayload(params, results), [params, results]);
+  const syncParamsToCurrency = (targetCode) => {
+    const from = paramsCurrencyRef.current;
+    if (from === targetCode) {
+      setParamsCurrency(targetCode);
+      return;
+    }
+    setParams((prev) => convertMoneyParams(prev, from, targetCode, rates));
+    paramsCurrencyRef.current = targetCode;
+    setParamsCurrency(targetCode);
+  };
+
+  // Keep money params aligned with the active currency (geo detect + manual switch)
+  useEffect(() => {
+    if (!currencyReady) return;
+
+    if (urlHydratedRef.current) {
+      const urlCur = paramsCurrencyRef.current;
+      if (urlCur && urlCur !== currency) {
+        setCurrency(urlCur);
+      } else {
+        setParamsCurrency(paramsCurrencyRef.current);
+      }
+      return;
+    }
+
+    syncParamsToCurrency(currency);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currencyReady, currency, rates]);
+
+  const handleCurrencyChange = (nextCode) => {
+    if (!nextCode || nextCode === currency) return;
+    syncParamsToCurrency(nextCode);
+    setCurrency(nextCode);
+  };
+
+  const isCurrencySynced = currencyReady && paramsCurrency === currency;
+
+  // Compute results only when params match active currency
+  const results = useMemo(
+    () => (isCurrencySynced ? generateFullBreakdown(params) : null),
+    [params, isCurrencySynced]
+  );
+  const insights = useMemo(
+    () => (results ? generateInsights(results, formatCurrency) : []),
+    [results, formatCurrency]
+  );
+  const sharePayload = useMemo(
+    () => (results ? buildSharePayload(params, results, currency, formatCurrency) : null),
+    [params, results, currency, formatCurrency]
+  );
 
   // 2. Client-side Vector PDF Report Export
   const handleExportPDF = () => {
+    if (!results) return;
     setIsExporting(true);
 
     try {
@@ -99,11 +161,8 @@ export default function App() {
       const lightBg = [248, 250, 252];
       const borderClr = [226, 232, 240];
 
-      // Format Indian currency full helper (using Rs. to prevent encoding bugs)
-      const fmt = (val) => {
-        if (val == null || isNaN(val)) return 'Rs. 0';
-        return 'Rs. ' + Math.abs(Math.round(val)).toLocaleString('en-IN');
-      };
+      // Format using active geo currency (ASCII-safe for jsPDF)
+      const fmt = (val) => formatCurrency(val, { ascii: true, compact: false });
 
       const pageBottomY = pageHeight - 18;
       // jsPDF Helvetica only supports WinAnsi — strip emoji & fancy Unicode that corrupt layout
@@ -500,28 +559,49 @@ export default function App() {
 
       {/* Main Header / Navigation */}
       <header className="backdrop-blur-md sticky top-0 z-40 theme-transition" style={{ borderBottom: '1px solid var(--border-soft)', background: 'color-mix(in srgb, var(--bg) 84%, transparent)' }}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-neon-purple via-neon-blue to-neon-cyan flex items-center justify-center shadow-glow-sm shrink-0 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg sm:rounded-xl bg-gradient-to-tr from-neon-purple via-neon-blue to-neon-cyan flex items-center justify-center shadow-glow-sm shrink-0 overflow-hidden">
               <img
                 src={brandIconWhite}
                 alt=""
-                width={18}
-                height={18}
-                className="w-[18px] h-[18px] object-contain"
+                width={16}
+                height={16}
+                className="w-3.5 h-3.5 sm:w-[18px] sm:h-[18px] object-contain"
                 draggable={false}
               />
             </div>
-            <div className="font-display font-extrabold text-base md:text-xl tracking-tight flex items-center gap-1.5 whitespace-nowrap">
+            <div className="font-display font-extrabold text-sm sm:text-base md:text-xl tracking-tight flex items-center gap-1.5 whitespace-nowrap truncate">
               SIP FirePlan
               <span className="hidden sm:inline-block text-[9px] font-semibold text-neon-purple px-1.5 py-0.5 rounded-md font-mono tracking-wider whitespace-nowrap">AI-Powered • Free Forever</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 shrink-0">
+            <label className="rounded-lg sm:rounded-xl px-1.5 sm:px-2 py-1 sm:py-1.5 text-[10px] md:text-xs font-semibold flex items-center gap-1 sm:gap-1.5"
+              style={{ border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text-secondary)' }}
+              title={country ? `Detected location: ${country}` : 'Currency based on your location'}
+            >
+              <span className="hidden sm:inline text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                {currencyReady ? (country || '—') : '…'}
+              </span>
+              <select
+                value={currency}
+                onChange={(e) => handleCurrencyChange(e.target.value)}
+                disabled={!currencyReady}
+                className="bg-transparent outline-none font-mono font-bold cursor-pointer max-w-[3.6rem] sm:max-w-[4.5rem] disabled:opacity-50"
+                style={{ color: 'var(--text-primary)' }}
+                aria-label="Display currency"
+              >
+                {Object.keys(CURRENCY_META).map((code) => (
+                  <option key={code} value={code}>{code}</option>
+                ))}
+              </select>
+              <span className="text-neon-cyan font-bold">{symbol.trim()}</span>
+            </label>
             <button
               onClick={() => setTheme((prev) => prev === 'dark' ? 'light' : 'dark')}
-              className="rounded-xl px-2.5 py-2 text-xs font-semibold transition-all flex items-center gap-1.5"
+              className="rounded-lg sm:rounded-xl p-1.5 sm:px-2.5 sm:py-2 text-xs font-semibold transition-all flex items-center gap-1.5"
               style={{ border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text-secondary)' }}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
               title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
@@ -531,10 +611,26 @@ export default function App() {
             </button>
             <button
               onClick={() => setActiveView(activeView === 'dashboard' ? 'compare' : 'dashboard')}
-              className="rounded-xl p-2 md:px-3 md:py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5"
-              style={{ border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text-secondary)' }}
+              className={`rounded-lg sm:rounded-xl p-1.5 md:px-3 md:py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activeView === 'compare'
+                  ? 'bg-neon-cyan/15 border-neon-cyan/40 text-neon-cyan shadow-glow-cyan'
+                  : ''
+              }`}
+              style={activeView === 'compare'
+                ? { border: '1px solid rgba(34,211,238,0.45)' }
+                : { border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text-secondary)' }}
+              aria-pressed={activeView === 'compare'}
+              aria-label={activeView === 'compare' ? 'Back to dashboard' : 'Compare strategies'}
+              title={activeView === 'compare' ? 'Go back' : 'Compare strategies'}
             >
-              <Layers size={14} className="text-neon-cyan shrink-0" />
+              {/* Mobile: swap icon so active state is obvious */}
+              <span className="md:hidden flex items-center justify-center">
+                {activeView === 'compare'
+                  ? <ArrowLeft size={15} className="text-neon-cyan" />
+                  : <Layers size={15} className="text-neon-cyan" />}
+              </span>
+              {/* Desktop: keep layers icon + label */}
+              <Layers size={14} className={`hidden md:block shrink-0 ${activeView === 'compare' ? 'text-neon-cyan' : 'text-neon-cyan'}`} />
               <span className="hidden md:inline">
                 {activeView === 'dashboard' ? 'Compare Strategies 📊' : 'Go back'}
               </span>
@@ -542,17 +638,17 @@ export default function App() {
 
             <button
               onClick={() => setShowShareModal(true)}
-              className="rounded-xl p-2 transition shrink-0"
+              className="rounded-lg sm:rounded-xl p-1.5 sm:p-2 transition shrink-0"
               style={{ border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text-secondary)' }}
               title="Share Scenario"
             >
-              <Share2 size={16} />
+              <Share2 size={15} className="sm:w-4 sm:h-4" />
             </button>
 
             <button
               onClick={handleExportPDF}
               disabled={isExporting}
-              className="rounded-xl bg-gradient-to-r from-neon-purple to-neon-blue hover:shadow-glow-sm p-2 md:px-3 md:py-1.5 text-xs font-bold flex items-center gap-1.5 transition-all text-white shrink-0"
+              className="rounded-lg sm:rounded-xl bg-gradient-to-r from-neon-purple to-neon-blue hover:shadow-glow-sm p-1.5 sm:p-2 md:px-3 md:py-1.5 text-xs font-bold flex items-center gap-1.5 transition-all text-white shrink-0"
             >
               {isExporting ? (
                 <>
@@ -573,7 +669,7 @@ export default function App() {
       <h1 className="sr-only">SIPFirePlan — Free FIRE Calculator & SIP Planner for India | Financial Independence Made Simple</h1>
 
       {/* Main Body Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-4 md:px-6 py-5 sm:py-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 z-10 relative">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-4 md:px-6 py-3.5 sm:py-6 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 z-10 relative">
 
         {/* Left Hand: Sliders Panel */}
         <section className="lg:col-span-4 space-y-6">
@@ -582,65 +678,56 @@ export default function App() {
 
         {/* Right Hand: Simulation Reports & Insights */}
         <section className="lg:col-span-8 space-y-6" ref={dashboardRef}>
-          
-          <AnimatePresence mode="wait">
-            {activeView === 'dashboard' ? (
-              <motion.div
-                key="dashboard-view"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                {/* 1. Results Dashboard Metrics Grid */}
-                <ResultsDashboard results={results} />
-
-                {/* 2. Visualizations & Ledgers (Area, Bar, Table) */}
-                <VisualsSection results={results} theme={theme} />
-
-                {/* 3. AI Insights Feed */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
-                    <Sparkles size={16} className="text-neon-purple fill-neon-purple" />
-                    🤖 Your Personal AI Wealth Coach
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {insights.slice(0, 4).map((ins) => (
-                      <motion.div
-                        key={ins.id}
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="glass-card p-4 hover:border-white/[0.12] transition-all flex items-start gap-3.5"
-                      >
-                        <div className="text-2xl mt-0.5 shrink-0 select-none">{ins.emoji}</div>
-                        <div className="space-y-1.5">
-                          <h4 className="text-sm font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>{ins.title}</h4>
-                          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{ins.text}</p>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
+          {activeView === 'dashboard' ? (
+            <div className="space-y-6">
+              {!isCurrencySynced ? (
+                <div className="glass-card p-10 flex flex-col items-center justify-center gap-3 text-center">
+                  <RefreshCw size={24} className="animate-spin text-neon-purple" />
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    Updating amounts to {currency}…
+                  </p>
                 </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="compare-view"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.3 }}
-              >
-                {/* Strategies Comparator matrix panel */}
-                <ComparePanel
-                  currentParams={params}
-                  currentMetrics={results.metrics}
-                  currentSwpResult={results.swpResult}
-                  onLoadParams={setParams}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+              ) : (
+                <>
+                  <ResultsDashboard key={`results-${currency}`} results={results} />
+                  <VisualsSection key={`visuals-${currency}`} results={results} theme={theme} />
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+                      <Sparkles size={16} className="text-neon-purple fill-neon-purple" />
+                      🤖 Your Personal AI Wealth Coach
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {insights.slice(0, 4).map((ins) => (
+                        <div
+                          key={`${ins.id}-${currency}`}
+                          className="glass-card p-4 hover:border-white/[0.12] transition-all flex items-start gap-3.5"
+                        >
+                          <div className="text-2xl mt-0.5 shrink-0 select-none">{ins.emoji}</div>
+                          <div className="space-y-1.5">
+                            <h4 className="text-sm font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>{ins.title}</h4>
+                            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>{ins.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <ComparePanel
+                currentParams={params}
+                currentMetrics={results?.metrics}
+                currentSwpResult={results?.swpResult}
+                onLoadParams={(loaded) => {
+                  setParams(loaded);
+                  paramsCurrencyRef.current = currency;
+                  setParamsCurrency(currency);
+                }}
+              />
+            </div>
+          )}
         </section>
       </main>
 

@@ -7,9 +7,11 @@ import {
 import MetricCard from './MetricCard';
 import HealthGauge from './HealthGauge';
 import FIREMeter from './FIREMeter';
-import { formatCurrency } from '../engine/sipCalculator';
+import { useCurrency } from '../context/CurrencyContext';
+import { formatMoney } from '../utils/currency';
 
 export default function ResultsDashboard({ results }) {
+  const { currency } = useCurrency();
   if (!results) return null;
   const { metrics, swpResult } = results;
 
@@ -35,11 +37,11 @@ export default function ResultsDashboard({ results }) {
         <MetricCard
           icon={PiggyBank} label="Final Retirement Corpus" value={metrics.finalCorpus}
           color="purple" delay={2}
-          subText={`Real value (inflation-adj.): ${formatCurrency(metrics.inflationAdjustedCorpus)}`}
+          subText={`Real value (inflation-adj.): ${formatMoney(metrics.inflationAdjustedCorpus, { currency })}`}
         />
         <MetricCard
           icon={BarChart3} label="Annual Growth Rate (CAGR)" value={metrics.cagr}
-          prefix="" suffix="%" color="orange" delay={3}
+          prefix="" suffix="%" color="orange" delay={3} isMoney={false}
         />
 
         {swpResult && (
@@ -55,7 +57,7 @@ export default function ResultsDashboard({ results }) {
             />
             <MetricCard
               icon={Clock} label="Your Money Lasts" value={swpResult.yearsLasted}
-              prefix="" suffix=" yrs" color="cyan" delay={6}
+              prefix="" suffix=" yrs" color="cyan" delay={6} isMoney={false}
               subText="Never outlive your wealth"
             />
             <MetricCard
@@ -73,7 +75,7 @@ export default function ResultsDashboard({ results }) {
             />
             <MetricCard
               icon={ShieldCheck} label="Wealth Multiplier" value={metrics.wealthMultiplier}
-              prefix="" suffix="x" color="green" delay={5}
+              prefix="" suffix="x" color="green" delay={5} isMoney={false}
             />
           </>
         )}

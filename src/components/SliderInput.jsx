@@ -1,12 +1,21 @@
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
+import { useCurrency } from '../context/CurrencyContext';
 
 export default function SliderInput({
   label, value, onChange, min = 0, max = 100, step = 1,
   prefix = '', suffix = '', icon: Icon, color = 'purple',
-  formatDisplay, helpText,
+  formatDisplay, helpText, isMoney = false,
 }) {
   const trackRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState('');
+  const { symbol, locale, currency } = useCurrency();
+
+  // Drop any in-progress edit when currency switches
+  useEffect(() => {
+    setEditing(false);
+  }, [currency]);
 
   const colorMap = {
     purple: 'from-neon-purple to-neon-blue',
@@ -23,9 +32,29 @@ export default function SliderInput({
     orange: 'shadow-glow-sm',
   };
 
-  // Dynamically scale max if value exceeds default max prop
+  const moneyPrefix = isMoney ? (prefix || symbol) : prefix;
   const effectiveMax = Math.max(max, value || 0);
   const percent = Math.min(100, Math.max(0, (((value || 0) - min) / ((effectiveMax - min) || 1)) * 100));
+
+  // Keep draft text in sync when value changes from slider (not while typing)
+  useEffect(() => {
+    if (!editing) {
+      setText(value == null || value === '' ? '' : String(value));
+    }
+  }, [value, editing]);
+
+  const commitText = useCallback((raw) => {
+    if (raw === '' || raw === '-' || raw === '.' || raw === '-.') {
+      onChange(min);
+      return;
+    }
+    const v = parseFloat(raw);
+    if (isNaN(v)) {
+      onChange(min);
+      return;
+    }
+    onChange(Math.max(min, v));
+  }, [min, onChange]);
 
   const updateValue = useCallback((clientX) => {
     if (!trackRef.current) return;
@@ -41,8 +70,9 @@ export default function SliderInput({
   const handlePointerDown = useCallback((e) => {
     e.preventDefault();
     setIsDragging(true);
+    setEditing(false);
     updateValue(e.clientX);
-    const handleMove = (e) => updateValue(e.clientX);
+    const handleMove = (ev) => updateValue(ev.clientX);
     const handleUp = () => {
       setIsDragging(false);
       window.removeEventListener('pointermove', handleMove);
@@ -52,7 +82,8 @@ export default function SliderInput({
     window.addEventListener('pointerup', handleUp);
   }, [updateValue]);
 
-  const displayValue = formatDisplay ? formatDisplay(value) : `${prefix}${(value || 0).toLocaleString('en-IN')}${suffix}`;
+  const formatBound = (n) => Math.round(n || 0).toLocaleString(locale);
+  const inputValue = editing ? text : (value ?? '');
 
   return (
     <div className="group space-y-3">
@@ -62,22 +93,41 @@ export default function SliderInput({
           {label}
         </label>
         <div className="flex items-center gap-2">
+          {isMoney && (
+            <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>{moneyPrefix}</span>
+          )}
           <input
-            type="number"
-            value={value ?? ''}
+            type="text"
+            inputMode="decimal"
+            value={inputValue}
+            onFocus={(e) => {
+              setEditing(true);
+              const next = value == null ? '' : String(value);
+              setText(next);
+              // Select all so the next keypress replaces instead of appending to 0
+              requestAnimationFrame(() => e.target.select());
+            }}
+            onBlur={() => {
+              commitText(text);
+              setEditing(false);
+            }}
             onChange={(e) => {
-              const valStr = e.target.value;
-              if (valStr === '') {
-                onChange(0);
-                return;
+              let raw = e.target.value.trim();
+              // Allow empty / partial numeric typing
+              if (raw === '' || /^-?\d*\.?\d*$/.test(raw)) {
+                // Strip leading zeros: "06" → "6", keep "0" and "0.5"
+                if (/^-?0\d+/.test(raw)) {
+                  raw = String(parseFloat(raw));
+                }
+                setText(raw);
+                if (raw !== '' && raw !== '-' && raw !== '.' && raw !== '-.') {
+                  const v = parseFloat(raw);
+                  if (!isNaN(v)) onChange(Math.max(min, v));
+                }
               }
-              const v = parseFloat(valStr);
-              if (!isNaN(v)) onChange(Math.max(min, v)); // Max cap removed
             }}
             className="w-28 rounded-lg px-3 py-1.5 text-right text-sm font-mono outline-none focus:border-neon-purple/50 focus:ring-1 focus:ring-neon-purple/20 transition-all"
             style={{ border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text-primary)' }}
-            min={min}
-            step={step}
           />
           {suffix && <span className="text-xs min-w-[20px]" style={{ color: 'var(--text-muted)' }}>{suffix}</span>}
         </div>
@@ -100,10 +150,11 @@ export default function SliderInput({
       </div>
 
       <div className="flex items-center justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
-        <span>{prefix}{min.toLocaleString('en-IN')}{suffix}</span>
+        <span>{moneyPrefix}{formatBound(min)}{suffix}</span>
         {helpText && <span style={{ color: 'var(--text-muted)' }}>{helpText}</span>}
-        <span>{prefix}{effectiveMax.toLocaleString('en-IN')}{suffix}</span>
+        <span>{moneyPrefix}{formatBound(effectiveMax)}{suffix}</span>
       </div>
+      {formatDisplay && <span className="sr-only">{formatDisplay(value)}</span>}
     </div>
   );
 }

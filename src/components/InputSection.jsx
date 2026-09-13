@@ -5,8 +5,11 @@ import {
   ArrowDownCircle, ArrowUpCircle, Flame
 } from 'lucide-react';
 import SliderInput from './SliderInput';
+import { useCurrency } from '../context/CurrencyContext';
+import { convertMoneyParams } from '../utils/currency';
 
-const presets = [
+/** Presets defined in INR — converted to active currency on apply */
+const PRESETS_INR = [
   { name: '🔥 Early Retirement (FIRE)', lumpSum: 500000, monthlySIP: 50000, stepUpPercent: 15, annualReturn: 14, totalYears: 40, sipStopYear: 15, inflationRate: 6, monthlyWithdrawal: 200000, swpStepUp: 7, swpReturn: 9, swpYears: 30 },
   { name: '🎓 Child\'s Future Fund', lumpSum: 200000, monthlySIP: 25000, stepUpPercent: 10, annualReturn: 12, totalYears: 18, sipStopYear: 18, inflationRate: 7, monthlyWithdrawal: 0, swpStepUp: 0, swpReturn: 8, swpYears: 0 },
   { name: '💎 Crorepati Blueprint', lumpSum: 1000000, monthlySIP: 30000, stepUpPercent: 10, annualReturn: 13, totalYears: 30, sipStopYear: 20, inflationRate: 6, monthlyWithdrawal: 150000, swpStepUp: 8, swpReturn: 9, swpYears: 25 },
@@ -15,28 +18,37 @@ const presets = [
 ];
 
 export default function InputSection({ params, setParams }) {
+  const { currency, rates, scaleBound } = useCurrency();
   const update = (key) => (val) => setParams(prev => ({ ...prev, [key]: val }));
 
   const applyPreset = (preset) => {
     const { name, ...values } = preset;
-    setParams(prev => ({ ...prev, ...values }));
+    const converted = convertMoneyParams(values, 'INR', currency, rates);
+    setParams(prev => ({ ...prev, ...converted }));
   };
 
+  // Slider bounds scaled from INR definitions into native currency
+  const lumpMax = scaleBound(50000000, { min: 1000 });
+  const lumpStep = Math.max(1, scaleBound(500, { min: 1 }));
+  const sipMax = scaleBound(500000, { min: 100 });
+  const sipStep = Math.max(1, scaleBound(500, { min: 1 }));
+  const wdMax = scaleBound(1000000, { min: 100 });
+  const wdStep = Math.max(1, scaleBound(5000, { min: 1 }));
+
   return (
-    <div className="space-y-6">
-      {/* Presets */}
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
+        <h3 className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-2 sm:mb-3" style={{ color: 'var(--text-muted)' }}>
           Quick Templates
         </h3>
-        <div className="flex flex-wrap gap-2">
-          {presets.map((p) => (
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          {PRESETS_INR.map((p) => (
             <motion.button
               key={p.name}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => applyPreset(p)}
-              className="rounded-full px-3 py-1.5 text-xs font-medium hover:border-neon-purple/30 transition-all duration-200"
+              className="rounded-full px-2.5 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-medium hover:border-neon-purple/30 transition-all duration-200"
               style={{ border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text-secondary)' }}
             >
               {p.name}
@@ -45,7 +57,6 @@ export default function InputSection({ params, setParams }) {
         </div>
       </div>
 
-      {/* Investment Inputs */}
       <div className="glass-card p-6 space-y-6">
         <div className="flex items-center gap-2 mb-2">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center">
@@ -55,14 +66,16 @@ export default function InputSection({ params, setParams }) {
         </div>
 
         <SliderInput
+          key={`lumpSum-${currency}`}
           label="One-Time Lump Sum Investment" icon={Wallet}
           value={params.lumpSum} onChange={update('lumpSum')}
-          min={0} max={50000000} step={500} prefix="₹" color="purple"
+          min={0} max={lumpMax} step={lumpStep} isMoney color="purple"
         />
         <SliderInput
+          key={`monthlySIP-${currency}`}
           label="Monthly SIP Amount" icon={BarChart3}
           value={params.monthlySIP} onChange={update('monthlySIP')}
-          min={0} max={500000} step={500} prefix="₹" color="cyan"
+          min={0} max={sipMax} step={sipStep} isMoney color="cyan"
         />
         <SliderInput
           label="Annual SIP Step-Up (%)" icon={ArrowUpCircle}
@@ -93,7 +106,6 @@ export default function InputSection({ params, setParams }) {
         />
       </div>
 
-      {/* Withdrawal Inputs */}
       <div className="glass-card p-6 space-y-6">
         <div className="flex items-center gap-2 mb-2">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-neon-green to-neon-cyan flex items-center justify-center">
@@ -103,9 +115,10 @@ export default function InputSection({ params, setParams }) {
         </div>
 
         <SliderInput
-          label="Monthly Withdrawal Amount (₹)" icon={Wallet}
+          key={`monthlyWithdrawal-${currency}`}
+          label={`Monthly Withdrawal Amount (${currency})`} icon={Wallet}
           value={params.monthlyWithdrawal} onChange={update('monthlyWithdrawal')}
-          min={0} max={1000000} step={5000} prefix="₹" color="green"
+          min={0} max={wdMax} step={wdStep} isMoney color="green"
         />
         <SliderInput
           label="Yearly Withdrawal Increase (%)" icon={ArrowUpCircle}

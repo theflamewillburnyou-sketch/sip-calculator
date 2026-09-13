@@ -1,9 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Flame, Landmark, Award } from 'lucide-react';
-import { formatCurrency } from '../engine/sipCalculator';
+import { useCurrency } from '../context/CurrencyContext';
+import { formatMoney } from '../utils/currency';
 
 export default function FIREMeter({ progress = 0, fireNumber = 0 }) {
+  const { currency } = useCurrency();
   const cleanProgress = Math.min(100, Math.max(0, Math.round(progress)));
 
   // Generate badges and labels based on progress and corpus targets
@@ -42,7 +44,7 @@ export default function FIREMeter({ progress = 0, fireNumber = 0 }) {
           </div>
           <div className="text-right">
             <span className="text-[9px] block uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>FIRE Target (25× Annual Expenses)</span>
-            <span className="text-xs font-mono font-semibold" style={{ color: 'var(--text-secondary)' }}>{formatCurrency(fireNumber)}</span>
+            <span key={currency} className="text-xs font-mono font-semibold" style={{ color: 'var(--text-secondary)' }}>{formatMoney(fireNumber, { currency })}</span>
           </div>
         </div>
 

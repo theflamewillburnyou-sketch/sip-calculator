@@ -3,14 +3,16 @@
  * Generates contextual financial insights based on calculation results.
  */
 
-import { formatCurrency, formatPercent } from './sipCalculator';
+import { formatPercent } from './sipCalculator';
 
 /**
  * Generate all insights from calculation results
  * @param {object} results - Output from generateFullBreakdown
+ * @param {function} formatMoney - Active currency formatter (amount, opts?) => string
  * @returns {Array} Array of insight objects
  */
-export function generateInsights(results) {
+export function generateInsights(results, formatMoney) {
+  const fmt = typeof formatMoney === 'function' ? formatMoney : (v) => String(v ?? 0);
   if (!results || !results.metrics) return [];
 
   const insights = [];
@@ -58,7 +60,7 @@ export function generateInsights(results) {
       emoji: '💰',
       type: 'success',
       title: 'Returns Beat Investment',
-      text: `Your returns (${formatCurrency(totalReturns)}) are ${pct}% more than what you invested. Your money is truly working for you!`,
+      text: `Your returns (${fmt(totalReturns)}) are ${pct}% more than what you invested. Your money is truly working for you!`,
       priority: 3,
     });
   }
@@ -92,7 +94,7 @@ export function generateInsights(results) {
         emoji: '✅',
         type: 'success',
         title: 'Sustainable Withdrawals',
-        text: `You can safely withdraw for ${params.swpYears} years and still have ${formatCurrency(swpResult.remainingCorpus)} remaining!`,
+        text: `You can safely withdraw for ${params.swpYears} years and still have ${fmt(swpResult.remainingCorpus)} remaining!`,
         priority: 2,
       });
     }
@@ -103,7 +105,7 @@ export function generateInsights(results) {
       emoji: '🏦',
       type: 'info',
       title: 'Total Withdrawals',
-      text: `Over the withdrawal phase, you'll receive ${formatCurrency(swpResult.totalWithdrawn)} in total — that's your retirement income!`,
+      text: `Over the withdrawal phase, you'll receive ${fmt(swpResult.totalWithdrawn)} in total — that's your retirement income!`,
       priority: 5,
     });
   }
@@ -116,7 +118,7 @@ export function generateInsights(results) {
       emoji: '📉',
       type: erosion > 60 ? 'warning' : 'info',
       title: 'Inflation Impact',
-      text: `Inflation reduces your corpus's purchasing power by ${erosion}%. In today's money, ${formatCurrency(finalCorpus)} is worth ${formatCurrency(inflationAdjustedCorpus)}.`,
+      text: `Inflation reduces your corpus's purchasing power by ${erosion}%. In today's money, ${fmt(finalCorpus)} is worth ${fmt(inflationAdjustedCorpus)}.`,
       priority: 4,
     });
   }
@@ -132,7 +134,7 @@ export function generateInsights(results) {
         emoji: '⬆️',
         type: 'success',
         title: 'Step-Up Advantage',
-        text: `Annual step-up of ${params.stepUpPercent}% increased your total SIP investment by ${formatCurrency(actualInvested - withoutStepUp)} more than a flat SIP.`,
+        text: `Annual step-up of ${params.stepUpPercent}% increased your total SIP investment by ${fmt(actualInvested - withoutStepUp)} more than a flat SIP.`,
         priority: 3,
       });
     }
@@ -145,7 +147,7 @@ export function generateInsights(results) {
       emoji: '🌴',
       type: 'success',
       title: 'Passive Income Potential',
-      text: `Your corpus can generate ${formatCurrency(passiveMonthlyIncome)}/month in passive income without touching the principal!`,
+      text: `Your corpus can generate ${fmt(passiveMonthlyIncome)}/month in passive income without touching the principal!`,
       priority: 3,
     });
   }
@@ -192,14 +194,14 @@ export function generateInsights(results) {
     });
   }
 
-  // 11. Millionaire/Crorepati milestone
-  if (finalCorpus >= 1e7) {
+  // 11. Wealth milestone (~₹1 Cr equivalent feel for INR; round local for others)
+  if (finalCorpus >= 1e7 || (finalCorpus >= 1e5 && finalCorpus >= params.lumpSum * 5)) {
     insights.push({
       id: 'crorepati',
       emoji: '🏆',
       type: 'success',
-      title: 'Crorepati Club — Unlocked!',
-      text: `You've crossed ₹1 Crore, joining the top 1% of Indian wealth builders. Keep compounding — the next crore comes faster than the first.`,
+      title: 'Major Wealth Milestone — Unlocked!',
+      text: `You've built ${fmt(finalCorpus)}, joining serious long-term wealth builders. Keep compounding — the next milestone comes faster than the first.`,
       priority: 1,
     });
   }

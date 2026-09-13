@@ -1,7 +1,5 @@
-import { formatCurrency } from '../engine/sipCalculator';
-
 /** Encodes current calculator state into a shareable URL. */
-export function buildStrategyShareUrl(params) {
+export function buildStrategyShareUrl(params, currency = 'INR') {
   const query = new URLSearchParams({
     ls: params.lumpSum,
     sip: params.monthlySIP,
@@ -14,6 +12,7 @@ export function buildStrategyShareUrl(params) {
     wsu: params.swpStepUp,
     wr: params.swpReturn,
     wy: params.swpYears,
+    cur: currency,
   }).toString();
 
   const base = typeof window !== 'undefined'
@@ -27,18 +26,20 @@ export function buildStrategyShareUrl(params) {
  * Dynamic share metadata from the active simulation.
  * @param {object} params - Calculator inputs
  * @param {object} results - Generated breakdown (optional)
+ * @param {string} currency - Active currency code
  */
-export function buildSharePayload(params, results) {
-  const url = buildStrategyShareUrl(params);
+export function buildSharePayload(params, results, currency = 'INR', formatMoney) {
+  const fmt = typeof formatMoney === 'function' ? formatMoney : (v) => String(v ?? 0);
+  const url = buildStrategyShareUrl(params, currency);
   const metrics = results?.metrics;
 
   const corpusLine = metrics
-    ? `Projected corpus: ${formatCurrency(metrics.finalCorpus)} (${metrics.wealthMultiplier}x multiplier)`
+    ? `Projected corpus: ${fmt(metrics.finalCorpus)} (${metrics.wealthMultiplier}x multiplier)`
     : 'Open the link to view my full wealth projection.';
 
   const title = 'WealthWise — My SIP & Retirement Strategy';
   const description = [
-    `Monthly SIP ${formatCurrency(params.monthlySIP)} · ${params.totalYears}-year plan · ${params.annualReturn}% expected return.`,
+    `Monthly SIP ${fmt(params.monthlySIP)} · ${params.totalYears}-year plan · ${params.annualReturn}% expected return.`,
     corpusLine,
     'Built with WealthWise AI — plan your financial future in minutes.',
   ].join(' ');
