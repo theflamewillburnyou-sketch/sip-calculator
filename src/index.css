@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    color-scheme: light;
     --bg: #f8fafc;
     --bg-elevated: #ffffff;
     --bg-soft: #f1f5f9;
@@ -24,6 +25,7 @@
   }
 
   [data-theme='dark'] {
+    color-scheme: dark;
     --bg: #030712;
     --bg-elevated: #060d1f;
     --bg-soft: #0f172a;
@@ -41,6 +43,13 @@
     --chart-grid: rgba(255, 255, 255, 0.07);
     --chart-axis: rgba(255, 255, 255, 0.38);
     --shadow-card: 0 20px 40px rgba(2, 6, 23, 0.35);
+  }
+
+  /* Native select dropdown options follow theme (fixes white-on-white in dark mode) */
+  select.currency-select,
+  select.currency-select option {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
   }
 
   * {

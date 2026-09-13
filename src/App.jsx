@@ -51,10 +51,12 @@ export default function App() {
     const initialTheme = storedTheme === 'dark' ? 'dark' : 'light';
     setTheme(initialTheme);
     document.documentElement.setAttribute('data-theme', initialTheme);
+    document.documentElement.style.colorScheme = initialTheme;
   }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.colorScheme = theme;
     localStorage.setItem('wealthwise_theme', theme);
   }, [theme]);
 
@@ -589,8 +591,12 @@ export default function App() {
                 value={currency}
                 onChange={(e) => handleCurrencyChange(e.target.value)}
                 disabled={!currencyReady}
-                className="bg-transparent outline-none font-mono font-bold cursor-pointer max-w-[3.6rem] sm:max-w-[4.5rem] disabled:opacity-50"
-                style={{ color: 'var(--text-primary)' }}
+                className="currency-select outline-none font-mono font-bold cursor-pointer max-w-[3.6rem] sm:max-w-[4.5rem] disabled:opacity-50 rounded-md"
+                style={{
+                  color: 'var(--text-primary)',
+                  backgroundColor: 'var(--bg-elevated)',
+                  colorScheme: theme,
+                }}
                 aria-label="Display currency"
               >
                 {Object.keys(CURRENCY_META).map((code) => (
